@@ -128,7 +128,7 @@ export default function OnboardingPage() {
     return (
       <section
         className={`rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] ${className}`}
-        style={{ background: "rgba(255,255,255,0.02)" }}
+        style={{ background: "transparent" }}
       >
         {children}
       </section>
@@ -154,14 +154,14 @@ export default function OnboardingPage() {
         {/* Container */}
         <div className="w-full max-w-4xl mx-auto px-4 pb-10 relative z-10 pt-8">
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-            <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
+            <div className="absolute inset-0 pointer-events-none" style={{ background: "none" }} />
             <div
               className="absolute -inset-1 rounded-[36px] pointer-events-none"
-              style={{ background: "radial-gradient(80% 50% at 10% 0%, rgba(255,255,255,0.12), rgba(255,255,255,0) 60%)" }}
+              style={{ background: "none" }}
             />
             <div
               className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-6 sm:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]"
-              style={{ background: "rgba(255,255,255,0.015)" }}
+              style={{ background: "transparent" }}
             >
               {/* Header */}
               <div className="flex items-center justify-between">
@@ -191,7 +191,7 @@ export default function OnboardingPage() {
                       <div className="text-3xl font-extrabold tracking-tight text-white">Tsunami 🌊</div>
                       <div className="text-white/85 text-base">“Private. Compliant. DeFi-native.”</div>
                       <div className="text-white/60 text-sm max-w-xl">Your tokens, your privacy. Built on Uniswap v4 + zkSNARKs.</div>
-                      <Button onClick={next} className="mt-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-6 h-11 shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110">
+                      <Button onClick={next} className="mt-2 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold px-6 h-11 shadow-[0_10px_30px_rgba(99,102,241,0.45)] hover:brightness-110">
                         Get Started
                       </Button>
                     </div>
@@ -256,7 +256,7 @@ export default function OnboardingPage() {
                       {!seedShown ? (
                         <div className="space-y-3">
                           <div className="text-white/70 text-sm">Write this down. This is the only way to recover your private balance.</div>
-                          <Button onClick={() => setSeedShown(true)} className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold px-5">Reveal</Button>
+                          <Button onClick={() => setSeedShown(true)} className="rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold px-5">Reveal</Button>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -413,7 +413,7 @@ export default function OnboardingPage() {
                 {step === 6 && (
                   <Card>
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">🌊</div>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white flex items-center justify-center">🌊</div>
                       <div>
                         <div className="text-white font-semibold">Your wallet is ready.</div>
                         <div className="text-white/70 text-sm mt-1">
@@ -422,7 +422,7 @@ export default function OnboardingPage() {
                       </div>
                     </div>
                     <div className="mt-4 grid sm:grid-cols-2 gap-3">
-                      <Button onClick={() => router.push("/dash")} className="h-12 w-full rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 inline-flex items-center justify-center gap-2">
+                      <Button onClick={() => router.push("/dash")} className="h-12 w-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold shadow-[0_10px_30px_rgba(99,102,241,0.45)] hover:brightness-110 inline-flex items-center justify-center gap-2">
                         Go to Dashboard
                       </Button>
                       <Button onClick={startFinish} className="h-12 w-full rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15">Finish</Button>
@@ -457,7 +457,7 @@ export default function OnboardingPage() {
             </DialogHeader>
             <div className="flex items-center justify-end gap-2">
               <Button onClick={() => setFinishing(false)} variant="outline" className="rounded-full bg-white/10 border border-white/15 text-white/85 hover:bg-white/15">Close</Button>
-              <Button onClick={() => { setFinishing(false); router.push("/dash") }} className="rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold">Go to Dashboard</Button>
+              <Button onClick={() => { setFinishing(false); router.push("/dash") }} className="rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold">Go to Dashboard</Button>
             </div>
           </DialogContent>
         </Dialog>

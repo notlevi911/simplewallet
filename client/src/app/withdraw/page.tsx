@@ -142,17 +142,14 @@ export default function WithdrawPage() {
       <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10 pt-8">
         {/* Glass wrapper */}
         <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-          <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "none" }} />
           <div
             className="absolute -inset-1 rounded-[36px] pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(80% 50% at 10% 0%, rgba(255,255,255,0.12), rgba(255,255,255,0) 60%)",
-            }}
+            style={{ background: "none" }}
           />
           <div
             className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]"
-            style={{ background: "rgba(255,255,255,0.015)" }}
+            style={{ background: "transparent" }}
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-2">
@@ -177,13 +174,13 @@ export default function WithdrawPage() {
                   <ArrowLeft className="w-4 h-4" /> Dashboard
                 </button>
                 <div className="relative group">
-                  <div className="p-2 rounded-lg border border-white/10 bg-white/10 text-white/80">
+                  <div className="p-2 rounded-lg border border-white/10 text-white/80">
                     <Info className="w-5 h-5" />
                   </div>
                   <div className="absolute right-0 mt-2 hidden group-hover:block z-20">
                     <div
                       className="w-72 text-sm text-white/85 backdrop-blur-xl border border-white/15 rounded-xl p-4"
-                      style={{ background: "rgba(255,255,255,0.05)" }}
+                      style={{ background: "transparent" }}
                     >
                       Withdrawals above a threshold may require a zk-compliance attestation.
                       Your wallet can help you prove compliance privately.
@@ -200,7 +197,7 @@ export default function WithdrawPage() {
                 {/* Token & Amount */}
                 <section
                   className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                  style={{ background: "rgba(255,255,255,0.02)" }}
+                  style={{ background: "transparent" }}
                 >
                   <div className="flex items-center justify-between">
                     <label className="text-white/90 text-base font-semibold">Token & Amount</label>
@@ -214,7 +211,7 @@ export default function WithdrawPage() {
                     <button
                       onClick={() => setShowTokenModal(true)}
                       className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
-                      style={{ background: "rgba(255,255,255,0.02)" }}
+                      style={{ background: "transparent" }}
                     >
                       <div className="flex items-center gap-4">
                         <div className="w-7 h-7 bg-emerald-400 rounded-full flex items-center justify-center">
@@ -233,7 +230,7 @@ export default function WithdrawPage() {
                     {/* Amount input */}
                     <div
                       className="rounded-2xl backdrop-blur-xl border border-white/15 px-5 py-4 flex flex-col justify-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                      style={{ background: "rgba(255,255,255,0.018)" }}
+                      style={{ background: "transparent" }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-white/80 text-sm font-medium">Amount</span>
@@ -402,7 +399,7 @@ export default function WithdrawPage() {
                       </button>
                       <button
                         onClick={startProofGeneration}
-                        className="px-3 py-2 rounded-full bg-[#e6ff55] text-[#0a0b0e] text-xs font-bold hover:brightness-110 transition inline-flex items-center gap-2 disabled:opacity-60"
+                        className="px-3 py-2 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white text-xs font-bold hover:brightness-110 transition inline-flex items-center gap-2 disabled:opacity-60"
                         disabled={generatingProof}
                       >
                         {generatingProof ? (
@@ -500,7 +497,7 @@ export default function WithdrawPage() {
                     <button
                       onClick={onConfirmWithdraw}
                       disabled={!canConfirm || confirming !== false}
-                      className="w-full h-14 px-8 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                      className="w-full h-14 px-8 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold text-base rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(99,102,241,0.45)] disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                     >
                       {confirming === false ? (
                         <>
@@ -530,7 +527,7 @@ export default function WithdrawPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowTokenModal(false)} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-6 shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            style={{ background: "transparent" }}
           >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3 text-white font-semibold text-lg">
@@ -629,7 +626,7 @@ export default function WithdrawPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setSuccessOpen(false)} />
           <div
             className="relative w-full max-w-md mx-auto backdrop-blur-3xl border border-white/15 rounded-2xl p-8 text-center shadow-[0_12px_48px_rgba(0,0,0,0.6)]"
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            style={{ background: "transparent" }}
           >
             {/* subtle confetti-ish accent */}
             <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center">
@@ -641,7 +638,7 @@ export default function WithdrawPage() {
             </div>
             <div
               className="backdrop-blur-xl border border-white/15 rounded-xl p-5 text-left text-white/80 mb-6"
-              style={{ background: "rgba(255,255,255,0.028)" }}
+              style={{ background: "transparent" }}
             >
               <div className="font-medium text-base">
                 Amount: {amount || "0.00"} {selectedToken.symbol} →{" "}
@@ -657,7 +654,7 @@ export default function WithdrawPage() {
                 Back to Dashboard
               </button>
               <button
-                className="px-5 py-3 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold hover:brightness-110 transition-all"
+                className="px-5 py-3 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold hover:brightness-110 transition-all"
                 onClick={() => setSuccessOpen(false)}
               >
                 View Receipt

@@ -154,12 +154,12 @@ export default function TsunamiSwap() {
 
       {/* Main Swap Card */}
       <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10">
-        {/* Glass wrapper with subtle gradient sheen */}
+        {/* Glass wrapper without color */}
         <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-          <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
-          {/* subtle edge glow */}
-          <div className="absolute -inset-1 rounded-[36px] pointer-events-none" style={{ background: "radial-gradient(80% 50% at 10% 0%, rgba(255,255,255,0.12), rgba(255,255,255,0) 60%)" }} />
-          <div className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]" style={{ background: "rgba(255,255,255,0.015)" }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ background: "none" }} />
+          {/* subtle edge glow removed to avoid color */}
+          <div className="absolute -inset-1 rounded-[36px] pointer-events-none" style={{ background: "none" }} />
+          <div className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]" style={{ background: "transparent" }}>
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-8">
@@ -197,7 +197,7 @@ export default function TsunamiSwap() {
                 <div className="text-sm text-white/70 mb-3 font-medium">Balance: {fromToken.balance.toLocaleString()} {fromToken.symbol}</div>
 
                 {/* Token / Network pill */}
-                <button onClick={() => openTokenModal("from")} className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between mb-5 hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                <button onClick={() => openTokenModal("from")} className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between mb-5 hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]" style={{ background: "transparent" }}>
                   <div className="flex items-center gap-4">
                     <div className="w-7 h-7 bg-yellow-400 rounded-full flex items-center justify-center">
                       <span className="text-black text-sm font-bold">{fromToken.symbol[0]}</span>
@@ -213,7 +213,7 @@ export default function TsunamiSwap() {
                 </button>
 
                 {/* Amount card */}
-                <div className="rounded-2xl backdrop-blur-xl border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] p-6" style={{ background: "rgba(255,255,255,0.018)" }}>
+                <div className="rounded-2xl backdrop-blur-xl border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] p-6" style={{ background: "transparent" }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-white/80 text-base font-semibold">You send:</span>
                   
@@ -237,7 +237,7 @@ export default function TsunamiSwap() {
                 <div className="text-sm text-white/70 mb-3 font-medium">Balance: {toToken.balance.toLocaleString()} {toToken.symbol}</div>
 
                 {/* Token / Network pill */}
-                <button onClick={() => openTokenModal("to")} className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between mb-5 hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]" style={{ background: "rgba(255,255,255,0.02)" }}>
+                <button onClick={() => openTokenModal("to")} className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between mb-5 hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]" style={{ background: "transparent" }}>
                   <div className="flex items-center gap-4">
                     <div className="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-bold">{toToken.symbol[0]}</span>
@@ -253,7 +253,7 @@ export default function TsunamiSwap() {
                 </button>
 
                 {/* Amount card */}
-                <div className="rounded-2xl backdrop-blur-xl border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] p-6" style={{ background: "rgba(255,255,255,0.028)" }}>
+                <div className="rounded-2xl backdrop-blur-xl border border-white/15 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)] p-6" style={{ background: "transparent" }}>
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-white/80 text-base font-semibold">You receive:</span>
                     <span className="text-white/70 text-sm font-medium">Estimated</span>
@@ -290,7 +290,7 @@ export default function TsunamiSwap() {
                 </button>
                 {detailsOpen && (
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-base text-white/80">
-                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-5 mb-4" style={{ background: "rgba(255,255,255,0.02)" }}>
+                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-5 mb-4" style={{ background: "transparent" }}>
                       <div className="flex items-center justify-between">
                         <span className="font-semibold">Slippage</span>
                         <select value={slippage} onChange={(e) => setSlippage(parseFloat(e.target.value))} className="bg-[#20232c] border border-white/10 rounded-md px-3 py-2 text-white font-medium">
@@ -300,14 +300,14 @@ export default function TsunamiSwap() {
                         </select>
                       </div>
                     </div>
-                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-4" style={{ background: "rgba(255,255,255,0.018)" }}>
+                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-4" style={{ background: "transparent" }}>
                       <div className="font-medium">Expected rate: 1 {fromToken.symbol} ≈ {price.toFixed(4)} {toToken.symbol}</div>
                     </div>
-                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-4" style={{ background: "rgba(255,255,255,0.018)" }}>
+                    <div className="backdrop-blur-xl border border-white/15 rounded-xl p-4" style={{ background: "transparent" }}>
                       <div className="font-medium">Tsunami fee: 0.10%</div>
                       <div className="font-medium">Uniswap LP fee: 0.30%</div>
                     </div>
-                    <div className="sm:col-span-3 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-white/80" style={{ background: "rgba(255,255,255,0.015)" }}>
+                    <div className="sm:col-span-3 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-white/80" style={{ background: "transparent" }}>
                       <span className="font-medium">This swap is shielded with zk-proofs. Your wallet generates proofs automatically.</span>
                     </div>
                   </div>
@@ -316,7 +316,7 @@ export default function TsunamiSwap() {
             </div>
 
             <div className="md:ml-auto">
-              <button onClick={onSwap} disabled={isSwapping} className="h-14 px-8 sm:px-10 bg-[#e6ff55] text-[#0a0b0e] font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(230,255,85,0.3)] disabled:opacity-60 disabled:cursor-not-allowed">
+              <button onClick={onSwap} disabled={isSwapping} className="h-14 px-8 sm:px-10 bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 text-white font-bold text-base sm:text-lg rounded-full hover:brightness-110 transition-all duration-200 shadow-[0_10px_30px_rgba(99,102,241,0.45)] disabled:opacity-60 disabled:cursor-not-allowed">
                 {isSwapping ? "Generating zk proof..." : "Swap Privately"}
               </button>
             </div>
