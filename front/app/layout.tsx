@@ -6,7 +6,7 @@ import "../components/liquid-ether.css"
 import Navbar from "../components/navbar"
 import LiquidEther from "../components/liquid-ether"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
 export const metadata: Metadata = {
   title: "tZunami - Private. Compliant. DeFi-native.",
@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-black text-white`}>
+      <body className={`${inter.variable} font-sans bg-black text-white`}>
         <div className="fixed inset-0 z-0">
           <LiquidEther
             colors={["#5227FF", "#FF9FFC", "#B19EEF"]}

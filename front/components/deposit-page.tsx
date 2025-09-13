@@ -123,7 +123,6 @@ export default function DepositPage() {
         <div
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage: "url('/back.jpg')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -136,7 +135,7 @@ export default function DepositPage() {
         <div className="w-full max-w-6xl mx-auto px-4 pb-10 relative z-10 pt-8">
           {/* Glass wrapper */}
           <div className="relative rounded-[32px] overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.55)]">
-            <div className="absolute inset-0 opacity-45 pointer-events-none bg-[radial-gradient(120%_120%_at_50%_0%,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.08)_40%,rgba(255,255,255,0.03)_100%)]" />
+            <div className="absolute inset-0 opacity-45 pointer-events-none" style={{ background: "transparent" }} />
             <div
               className="absolute -inset-1 rounded-[36px] pointer-events-none"
               style={{
@@ -145,7 +144,7 @@ export default function DepositPage() {
             />
             <div
               className="relative backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-[32px] p-5 sm:p-6 lg:p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.55)]"
-              style={{ background: "rgba(255,255,255,0.015)" }}
+              style={{ background: "transparent" }}
             >
               {/* Header */}
               <div className="flex items-start justify-between mb-2">
@@ -190,7 +189,7 @@ export default function DepositPage() {
                   {/* Token & Amount */}
                   <section
                     className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                    style={{ background: "rgba(255,255,255,0.08)" }}
+                    style={{ background: "transparent" }}
                   >
                     <div className="flex items-center justify-between">
                       <label className="text-white text-base font-semibold">Token & Amount</label>
@@ -204,7 +203,7 @@ export default function DepositPage() {
                       <button
                         onClick={() => setShowTokenModal(true)}
                         className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
-                        style={{ background: "rgba(255,255,255,0.08)" }}
+                        style={{ background: "transparent" }}
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-7 h-7 bg-[#e6ff55] rounded-full flex items-center justify-center">
@@ -221,7 +220,7 @@ export default function DepositPage() {
                       {/* Amount input */}
                       <div
                         className="rounded-2xl backdrop-blur-xl border border-white/15 px-5 py-4 flex flex-col justify-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                        style={{ background: "rgba(255,255,255,0.08)" }}
+                        style={{ background: "transparent" }}
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-white text-sm font-medium">Amount</span>
@@ -406,7 +405,7 @@ export default function DepositPage() {
                     <Button
                       onClick={onConfirmDeposit}
                       disabled={!canConfirm || !!confirming}
-                      className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm shadow-[0_10px_30px_rgba(230,255,85,0.3)] hover:brightness-110 transition disabled:opacity-60"
+                      className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm hover:brightness-110 transition disabled:opacity-60"
                     >
                       {confirming ? (
                         <>
@@ -431,11 +430,11 @@ export default function DepositPage() {
                   {successOpen && (
                     <section
                       className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                      style={{ background: "rgba(255,255,255,0.08)" }}
+                      style={{ background: "transparent" }}
                     >
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-full bg-[#e6ff55] text-[#0a0b0e] flex items-center justify-center">
-                          🎉
+                          <CheckCircle2 className="w-6 h-6 text-black" />
                         </div>
                         <div>
                           <div className="text-white font-semibold">
@@ -484,7 +483,7 @@ export default function DepositPage() {
                     >
                       <div className="text-white">{r.label}</div>
                       <div className={r.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}>
-                        {r.status === "confirmed" ? "✅ Confirmed" : "⏳ Pending finality"}
+                        {r.status === "confirmed" ? "Confirmed" : "Pending finality"}
                       </div>
                     </div>
                   ))}
