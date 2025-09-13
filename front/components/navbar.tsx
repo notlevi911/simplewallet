@@ -10,11 +10,11 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto">
         <div
           className="backdrop-blur-3xl backdrop-saturate-200 border border-white/15 rounded-2xl px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_16px_56px_rgba(0,0,0,0.35)]"
-          style={{ background: "rgba(0,0,0,0.8)" }}
+          style={{ background: "rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center justify-between">
             <button onClick={() => router.push("/")} className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#FF9FFC] flex items-center justify-center shadow-sm">
+              <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center shadow-sm">
                 <Shield className="w-5 h-5 text-black" />
               </div>
               <span className="font-bold text-xl text-white tracking-wide">tZunami</span>
