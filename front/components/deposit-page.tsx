@@ -19,6 +19,14 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useERC20 } from "@/hooks/use-erc20"
+import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
+import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useRegistrationStatus } from '@/hooks/use-registration-status'
+import { REGISTRAR_CONTRACT, EERC_CONTRACT, ERC20_TEST } from '@/lib/contracts'
+import { avalancheFuji } from 'wagmi/chains'
+import { processPoseidonEncryption } from '@/lib/poseidon/poseidon'
+import { parseUnits } from 'viem'
 
 type PublicToken = {
   symbol: string
@@ -52,6 +60,66 @@ export default function DepositPage() {
 
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
+  const { address } = useAccount()
+  const {
+    balance: publicBalance,
+    faucetAmount,
+    allowance,
+    decimals,
+    checkAllowanceSufficient,
+    handleApproveTokens,
+    isApproving,
+    approveError,
+    isApproveConfirmed,
+    approveHash,
+  } = useERC20()
+
+  const { 
+    encryptedBalance,
+    formattedBalance: encryptedFormattedBalance,
+    isLoadingBalance: isLoadingEncryptedBalance,
+    balanceError: encryptedBalanceError,
+    refreshBalance: refreshEncryptedBalance,
+    hasBalance: hasEncryptedBalance
+  } = useEncryptedBalance()
+
+  const { data: userPublicKey } = useReadContract({
+    address: REGISTRAR_CONTRACT.address,
+    abi: REGISTRAR_CONTRACT.abi,
+    functionName: 'getUserPublicKey',
+    args: address ? [address] : undefined,
+    chainId: avalancheFuji.id,
+    query: { enabled: !!address }
+  })
+
+  const { writeContract: depositTokens, data: depositHash, isPending: isDepositPending } = useWriteContract()
+  const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({ hash: depositHash })
+
+  const hasAllowance = amount ? checkAllowanceSufficient(amount) : false
+
+  async function onConfirmDeposit() {
+    if (!hasAllowance) {
+      await handleApproveTokens(String(numericAmount))
+      return
+    }
+    if (!userPublicKey || (userPublicKey as any[]).length !== 2) return
+    const pub = [BigInt((userPublicKey as any[])[0].toString()), BigInt((userPublicKey as any[])[1].toString())]
+    const depAmt = BigInt(numericAmount)
+    const { ciphertext, nonce, authKey } = processPoseidonEncryption([depAmt], pub)
+    const amountPCT: [bigint, bigint, bigint, bigint, bigint, bigint, bigint] = [
+      ...ciphertext,
+      ...authKey,
+      nonce,
+    ] as any
+    const amountWei = parseUnits(String(numericAmount), decimals || 18)
+    await depositTokens({
+      address: EERC_CONTRACT.address,
+      abi: EERC_CONTRACT.abi,
+      functionName: 'deposit',
+      args: [amountWei, ERC20_TEST.address, amountPCT],
+      chainId: avalancheFuji.id,
+    })
+  }
 
   const [recent, setRecent] = useState<{ label: string; status: "confirmed" | "pending" }[]>([
     { label: "500 USDC → 500 eUSDC", status: "confirmed" },
@@ -93,23 +161,18 @@ export default function DepositPage() {
     }, 1100)
   }
 
-  function onConfirmDeposit() {
-    // 2-step UI-only flow
-    setConfirming("approve")
-    setTimeout(() => setConfirming("lock"), 1200)
-    setTimeout(() => {
+  useEffect(() => {
+    if (isApproveConfirmed) {
       setConfirming(false)
+    }
+  }, [isApproveConfirmed])
+  useEffect(() => {
+    if (isDepositConfirmed) {
       setSuccessOpen(true)
-      // update local recent log
-      setRecent((prev) => [
-        {
-          label: `${numericAmount} ${selectedToken.symbol} → ${numericAmount} e${selectedToken.symbol}`,
-          status: "confirmed",
-        },
-        ...prev.slice(0, 4),
-      ])
-    }, 2400)
-  }
+      refreshEncryptedBalance()
+      setRecent((prev) => [{ label: `${numericAmount} ${selectedToken.symbol} → ${numericAmount} e${selectedToken.symbol}`, status: 'confirmed' }, ...prev.slice(0,4)])
+    }
+  }, [isDepositConfirmed, numericAmount, selectedToken.symbol, refreshEncryptedBalance])
 
   const stealthAddress = "0xStealth...abcd"
   const receiveLabel = denom

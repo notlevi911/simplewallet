@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { useAccount } from 'wagmi'
+import { useRegistration } from '@/hooks/use-registration'
 
 type Mode = "create" | "import"
 
@@ -67,6 +69,8 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [mode, setMode] = useState<Mode>("create")
+  const { address, chain } = useAccount()
+  const { register: doRegister, isPending, isPreparingProof, isConfirming, isConfirmed, error, hasProofReady } = useRegistration()
 
   // Create wallet state
   const [seed, setSeed] = useState<string[]>([])
@@ -321,6 +325,37 @@ export default function OnboardingPage() {
                         </div>
                       </div>
                     </Card>
+                    {/* zk-Registration wiring */}
+                    <div className="md:col-span-2">
+                      <Card>
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-white font-semibold">Link wallet with zk-Registration</div>
+                            <div className="text-white/70 text-sm">Sign a deterministic message, generate proof, then register on-chain.</div>
+                          </div>
+                          <div className="text-xs text-white/60">Network: {chain?.name || 'Unknown'}</div>
+                        </div>
+                        <div className="mt-4 flex items-center gap-3">
+                          <Button
+                            onClick={() => doRegister()}
+                            disabled={isPending || isConfirming}
+                            className="rounded-full bg-white/10 border border-white/15 text-white/90 hover:bg-white/15 px-5"
+                          >
+                            {isPending ? 'Working…' : hasProofReady ? 'Register' : 'Sign & Generate Proof'}
+                          </Button>
+                          {isConfirming && <span className="text-xs text-white/70">Submitting…</span>}
+                          {isConfirmed && <span className="text-xs text-emerald-300">Registered</span>}
+                        </div>
+                        {error && (
+                          <div className="mt-3 text-xs text-rose-200 bg-rose-500/15 border border-rose-500/40 px-3 py-2 rounded-lg flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4" /> {String(error.message || error)}
+                          </div>
+                        )}
+                        {!address && (
+                          <div className="mt-3 text-xs text-white/70">Connect your wallet in the browser to continue.</div>
+                        )}
+                      </Card>
+                    </div>
                   </div>
                 )}
 

@@ -15,6 +15,8 @@ import {
   ArrowLeftRight,
 } from "lucide-react"
 import { useMemo, useState } from "react"
+import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
+import { useAccount } from 'wagmi'
 import { useRouter } from "next/navigation"
 
 type TokenRow = {
@@ -27,6 +29,8 @@ type TokenRow = {
 export default function TsunamiDashboard() {
   const router = useRouter()
   const [showBalances, setShowBalances] = useState(true)
+  const { address } = useAccount()
+  const { formattedBalance, isLoadingBalance, balanceError, refreshBalance } = useEncryptedBalance()
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
   const [stealthAddress, setStealthAddress] = useState<string>(
     "0x3a1f2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f01"
@@ -170,6 +174,17 @@ export default function TsunamiDashboard() {
           </div>
           <div className="text-3xl sm:text-4xl font-extrabold bg-gradient-to-b from-white via-zinc-300 to-zinc-500 bg-clip-text text-transparent tracking-tight">
             {showBalances ? `$${totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "••••"}
+          </div>
+          <div className="mt-2 text-sm text-white/80">
+            {address ? (
+              isLoadingBalance ? 'Decrypting encrypted balance…' : balanceError ? (
+                <button onClick={refreshBalance} className="underline">Retry decrypt</button>
+              ) : (
+                `Encrypted total: ${formattedBalance}`
+              )
+            ) : (
+              'Connect wallet to view encrypted balance'
+            )}
           </div>
           <div className="mt-4 divide-y divide-white/10">
             {tokens.map((t) => (

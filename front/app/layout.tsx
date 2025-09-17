@@ -4,7 +4,11 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import "../components/liquid-ether.css"
 import Navbar from "../components/navbar"
-import LiquidEther from "../components/liquid-ether"
+// import LiquidEther from "../components/liquid-ether"
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { config } from "../lib/wagmi-config"
+import { Toaster } from "@/components/ui/sonner"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -19,9 +23,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const queryClient = new QueryClient()
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans bg-black text-white tz-metal min-h-screen overflow-x-hidden`}>
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
         {/* Global metallic gradient defs for strokes and text backgrounds */}
         <svg aria-hidden="true" width="0" height="0" className="absolute">
           <defs>
@@ -32,7 +39,7 @@ export default function RootLayout({
             </linearGradient>
           </defs>
         </svg>
-        <div className="fixed inset-0 z-0">
+        {/* <div className="fixed inset-0 z-0">
           <LiquidEther
             colors={["#ffffff", "#d4d4d4", "#737373"]}
             mouseForce={20}
@@ -50,12 +57,15 @@ export default function RootLayout({
             autoResumeDelay={3000}
             autoRampDuration={0.6}
           />
-        </div>
+        </div> */}
 
         <Navbar />
 
         {/* Page content */}
         <div className="relative z-10">{children}</div>
+        <Toaster position="top-right" richColors />
+          </QueryClientProvider>
+        </WagmiProvider>
       </body>
     </html>
   )
