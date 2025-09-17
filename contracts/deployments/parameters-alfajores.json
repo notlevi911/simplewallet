@@ -1,0 +1,10 @@
+{
+  "SelfKYCVerifierModule": {
+    "configId": 1,
+    "scope": "your-app-kyc-testnet-v1",
+    "requireOfacCheck": true,
+    "minimumAge": 18,
+    "allowedDocumentTypes": [1, 2],
+    "excludedCountries": []
+  }
+}
