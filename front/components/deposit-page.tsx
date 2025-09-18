@@ -21,10 +21,11 @@ import { useNativeAVAX } from "@/hooks/use-native-avax"
 import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useRegistrationStatus } from '@/hooks/use-registration-status'
+import { useRegistration } from '@/hooks/use-registration'
 import { REGISTRAR_CONTRACT, EERC_CONTRACT, ERC20_TEST } from '@/lib/contracts'
 import { avalancheFuji } from 'wagmi/chains'
 import { processPoseidonEncryption } from '@/lib/poseidon/poseidon'
-import { parseUnits } from 'viem'
+import { parseUnits, formatUnits } from 'viem'
 
 type PublicToken = {
   symbol: string
@@ -41,9 +42,6 @@ export default function DepositPage() {
   // UI State
   const [amount, setAmount] = useState<string>("")
   const [denom, setDenom] = useState<number | "">("")
-  const [generatingNote, setGeneratingNote] = useState(false)
-  const [noteReady, setNoteReady] = useState(false)
-  const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   
@@ -64,29 +62,79 @@ export default function DepositPage() {
     error: encryptedBalanceError
   } = useEncryptedBalance()
 
-  const { data: userPublicKey } = useReadContract({
+  // Check if user is registered
+  const { 
+    isRegistered, 
+    isLoading: isCheckingRegistration,
+    isOnCorrectChain: isRegistrationOnCorrectChain,
+    refetch: refetchRegistrationStatus
+  } = useRegistrationStatus(address)
+
+  // Registration functionality
+  const { 
+    register, 
+    isPending: isRegistering, 
+    isPreparingProof: isPreparingRegistration,
+    isConfirming: isRegistrationConfirming, 
+    isConfirmed: isRegistrationConfirmed, 
+    error: registrationError,
+    hash: registrationHash,
+    hasProofReady,
+    signature
+  } = useRegistration(refetchRegistrationStatus)
+
+  // Get user's public key from registrar contract
+  const { 
+    data: userPublicKey,
+    isLoading: isLoadingPublicKey,
+    error: publicKeyError
+  } = useReadContract({
     address: REGISTRAR_CONTRACT.address,
     abi: REGISTRAR_CONTRACT.abi,
     functionName: 'getUserPublicKey',
     args: address ? [address] : undefined,
     chainId: avalancheFuji.id,
-    query: { enabled: !!address }
+    query: { 
+      enabled: isRegistered && isRegistrationOnCorrectChain && !!address 
+    }
   })
 
   const { writeContract: depositTokens, data: depositHash, isPending: isDepositPending } = useWriteContract()
   const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({ hash: depositHash })
 
   async function onConfirmDeposit() {
-    if (!userPublicKey || (userPublicKey as any[]).length !== 2) return
+    // Check if user is registered first
+    if (!isRegistered) {
+      console.error('❌ User not registered. Please register first.')
+      return
+    }
+    
+    if (!userPublicKey || (userPublicKey as any[]).length !== 2) {
+      console.error('❌ User public key not available for deposit')
+      return
+    }
+    
     const pub = [BigInt((userPublicKey as any[])[0].toString()), BigInt((userPublicKey as any[])[1].toString())]
-    const depAmt = BigInt(numericAmount)
+    
+    // Convert amount to wei first, then to BigInt for encryption
+    const amountWei = parseUnits(String(numericAmount), decimals || 18)
+    const depAmt = amountWei // Use the wei amount directly
+    
     const { ciphertext, nonce, authKey } = processPoseidonEncryption([depAmt], pub)
     const amountPCT: [bigint, bigint, bigint, bigint, bigint, bigint, bigint] = [
       ...ciphertext,
       ...authKey,
       nonce,
-    ] as any
-    const amountWei = parseUnits(String(numericAmount), decimals || 18)
+    ] as [bigint, bigint, bigint, bigint, bigint, bigint, bigint]
+    
+    console.log('🔐 Ready to deposit with public key:', {
+      amount: numericAmount,
+      amountWei: amountWei.toString(),
+      balance: publicBalance,
+      userPublicKey: pub.map(k => k.toString()),
+      amountPCT: amountPCT.map(x => x.toString()),
+      timestamp: new Date().toISOString()
+    })
     
     // For native AVAX, we need to send the value directly
     await depositTokens({
@@ -111,7 +159,7 @@ export default function DepositPage() {
   const numericAmount = useMemo(() => Number.parseFloat(amount.replace(/,/g, "")) || 0, [amount])
   const amountUsd = useMemo(() => numericAmount * selectedToken.priceUsd, [numericAmount, selectedToken])
   const insufficient = numericAmount > selectedToken.balance
-  const canConfirm = numericAmount > 0 && !insufficient && noteReady && !balanceLoading
+  const canConfirm = numericAmount > 0 && !insufficient && !balanceLoading && isRegistered
 
   function setPct(p: number) {
     const next = Math.max(0, Math.min(selectedToken.balance, +(selectedToken.balance * p).toFixed(6)))
@@ -122,20 +170,32 @@ export default function DepositPage() {
     setAmount(String(selectedToken.balance))
   }
 
-  function startNoteGeneration() {
-    setNoteReady(false)
-    setGeneratingNote(true)
-    setTimeout(() => {
-      setGeneratingNote(false)
-      setNoteReady(true)
-    }, 1100)
-  }
 
   useEffect(() => {
     if (isDepositConfirmed) {
       setSuccessOpen(true)
     }
   }, [isDepositConfirmed, numericAmount, selectedToken.symbol])
+
+  // Refetch registration status when registration is confirmed
+  useEffect(() => {
+    if (isRegistrationConfirmed) {
+      console.log('✅ Registration confirmed, refetching status...')
+      // Wait a bit for the transaction to be mined, then refetch
+      setTimeout(() => {
+        console.log('🔄 Refetching registration status...')
+        refetchRegistrationStatus()
+      }, 2000)
+    }
+  }, [isRegistrationConfirmed, refetchRegistrationStatus])
+
+  // Also refetch when the page loads to ensure we have the latest status
+  useEffect(() => {
+    if (address && !isCheckingRegistration) {
+      console.log('🔄 Initial registration status check...')
+      refetchRegistrationStatus()
+    }
+  }, [address, refetchRegistrationStatus, isCheckingRegistration])
 
   const obfuscate = (addr?: string) => (addr && addr.startsWith("0x") && addr.length > 6 ? `${addr.slice(0,6)}…${addr.slice(-4)}` : "0x…")
   const stealthAddress = mounted ? obfuscate(address) : "0x…"
@@ -218,6 +278,107 @@ export default function DepositPage() {
                   </Tooltip>
                 </div>
               </div>
+
+              {/* Debug Info - Remove in production */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-4 p-3 rounded-lg bg-gray-800/50 border border-gray-600 text-xs text-gray-300">
+                  <div>Debug: isRegistered = {String(isRegistered)}</div>
+                  <div>isLoading = {String(isCheckingRegistration)}</div>
+                  <div>isRegistering = {String(isRegistering)}</div>
+                  <div>isPreparingRegistration = {String(isPreparingRegistration)}</div>
+                  <div>isRegistrationConfirming = {String(isRegistrationConfirming)}</div>
+                  <div>isRegistrationConfirmed = {String(isRegistrationConfirmed)}</div>
+                  <div>hasProofReady = {String(hasProofReady)}</div>
+                  <div>registrationHash = {registrationHash || 'null'}</div>
+                  <div>address = {address}</div>
+                </div>
+              )}
+
+              {/* Registration Status */}
+              {!isRegistered && (
+                <div className="mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                      <div>
+                        <div className="text-yellow-200 font-medium">Registration Required</div>
+                        <div className="text-yellow-300/80 text-sm">
+                          {isPreparingRegistration 
+                            ? "Preparing registration proof..." 
+                            : isRegistering
+                            ? "Signing registration transaction..."
+                            : isRegistrationConfirming 
+                            ? "Registration transaction is being confirmed..." 
+                            : "You need to register with the EERC system before making deposits."
+                          }
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => refetchRegistrationStatus()}
+                        disabled={isCheckingRegistration}
+                        className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 text-sm"
+                      >
+                        {isCheckingRegistration ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          "Refresh"
+                        )}
+                      </Button>
+                      <Button
+                        onClick={register}
+                        disabled={isPreparingRegistration || isRegistering || isRegistrationConfirming}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium px-4 py-2 rounded-lg"
+                      >
+                        {isPreparingRegistration ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Preparing...
+                          </>
+                        ) : isRegistering ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Signing...
+                          </>
+                        ) : isRegistrationConfirming ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Confirming...
+                          </>
+                        ) : (
+                          "Register Now"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isRegistered && (
+                <div className="mb-6 p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-400" />
+                      <div>
+                        <div className="text-green-200 font-medium">Registration Complete</div>
+                        <div className="text-green-300/80 text-sm">You're ready to make private deposits.</div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => refetchRegistrationStatus()}
+                      disabled={isCheckingRegistration}
+                      className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white hover:bg-white/20 text-sm"
+                    >
+                      {isCheckingRegistration ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Refresh"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {/* Grid content */}
               <div className="grid lg:grid-cols-3 gap-6 mt-6">
@@ -309,53 +470,6 @@ export default function DepositPage() {
                     )}
                   </section>
 
-                  {/* Deposit Commitment Setup */}
-                  <section
-                    className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
-                    style={{ background: "rgba(255,255,255,0.08)" }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-white text-base font-semibold">Deposit Commitment</div>
-                      {noteReady ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-300 text-xs px-2.5 py-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/40">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Ready
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-yellow-200 text-xs px-2.5 py-1.5 rounded-md bg-yellow-500/15 border border-yellow-500/40">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-sm text-white">Generating your private deposit key…</div>
-
-                    <div className="mt-3">
-                      <Progress value={noteReady ? 100 : generatingNote ? 40 : 10} className="h-2 bg-white/10" />
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="text-xs text-white">zk commitment (note), stealth address (auto-rotate)</div>
-                      <Button
-                        onClick={startNoteGeneration}
-                        disabled={generatingNote}
-                        className="px-3 py-2 rounded-full bg-white/10 border border-white/15 text-white hover:bg-white/15 text-xs inline-flex items-center gap-2 disabled:opacity-60"
-                      >
-                        {generatingNote ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" /> Working…
-                          </>
-                        ) : noteReady ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4" /> Save deposit note
-                          </>
-                        ) : (
-                          <>
-                            <Shield className="w-4 h-4" /> Generate
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </section>
 
                   {/* Quick Amount Selection */}
                   <section
@@ -443,11 +557,6 @@ export default function DepositPage() {
                       )}
                     </Button>
 
-                    {!noteReady && (
-                      <div className="mt-3 text-xs text-white">
-                        Tip: Click "Generate" above to create your private deposit note (for recovery).
-                      </div>
-                    )}
                   </section>
 
                   {/* Success state */}
