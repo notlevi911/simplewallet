@@ -52,8 +52,8 @@ export function useEncryptedBalance() {
   }, [encryptedBalance, address, signMessageAsync]);
 
   const formattedEncryptedBalance = decryptedBalance ? 
-    `${parseFloat(decryptedBalance).toFixed(4)} eUSDC` : 
-    '0.0000 eUSDC';
+    `${parseFloat(decryptedBalance).toFixed(4)} eAVAX` : 
+    '0.0000 eAVAX';
 
   return {
     encryptedBalance,

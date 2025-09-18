@@ -26,7 +26,7 @@ export default function TsunamiDashboard() {
     return Number.isFinite(n) ? n : 0
   }, [decryptedBalance])
   const tokens: TokenRow[] = useMemo(() => [
-    { symbol: "eUSDC", balance: decryptedNum, usd: decryptedNum, icon: DollarSign },
+    { symbol: "eAVAX", balance: decryptedNum, usd: decryptedNum * 25, icon: DollarSign }, // AVAX price ~$25
   ], [decryptedNum])
 
   const totalUsd = useMemo(() => tokens.reduce((sum, t) => sum + t.usd, 0), [tokens])
@@ -132,9 +132,9 @@ export default function TsunamiDashboard() {
             {address ? (
               isLoadingBalance ? 'Decrypting encrypted balance…' : balanceError ? (
                 'Error'
-              ) : (
-                `Encrypted total: ${decryptedBalance ?? 0}`
-              )
+            ) : (
+              `Encrypted total: ${decryptedBalance ?? 0} eAVAX`
+            )
             ) : (
               'Connect wallet to view encrypted balance'
             )}

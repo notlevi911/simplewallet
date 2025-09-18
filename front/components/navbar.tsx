@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useAccount, useChainId, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { toast } from 'sonner'
+import { useState, useEffect } from 'react'
 
 export default function Navbar() {
   const router = useRouter()
@@ -11,6 +12,9 @@ export default function Navbar() {
   const chainId = useChainId()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => setMounted(true), [])
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
@@ -79,9 +83,9 @@ export default function Navbar() {
                   }}
                   className="flex items-center gap-2 text-sm transition-colors px-4 py-2 rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/15 font-medium"
                 >
-                  {address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'Connect'}
+                  {mounted ? (address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'Connect') : 'Connect'}
                 </button>
-                <span className="text-xs text-white/60">{chainId ? `Chain: ${chainId}` : ''}</span>
+                <span className="text-xs text-white/60">{mounted ? (chainId ? `Chain: ${chainId}` : '') : ''}</span>
               </div>
             </div>
           </div>

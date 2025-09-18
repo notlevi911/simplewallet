@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import {
   Shield,
   Info,
-  ChevronDown,
   Loader2,
   Wallet,
   CheckCircle2,
@@ -18,8 +17,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { useERC20 } from "@/hooks/use-erc20"
+import { useNativeAVAX } from "@/hooks/use-native-avax"
 import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
 import { useReadContract, useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useRegistrationStatus } from '@/hooks/use-registration-status'
@@ -35,52 +33,35 @@ type PublicToken = {
   balance: number
 }
 
-const PUBLIC_TOKENS: PublicToken[] = [
-  { symbol: "USDC", name: "USD Coin", priceUsd: 1, balance: 2350 },
-  { symbol: "DAI", name: "DAI Stablecoin", priceUsd: 1, balance: 1840 },
-  { symbol: "ETH", name: "Ethereum", priceUsd: 1600, balance: 1.23 },
-]
-
-const FIXED_DENOMS = [100, 500, 1000]
+const FIXED_DENOMS = [1, 5, 10] // AVAX amounts for testnet
 
 export default function DepositPage() {
   const router = useRouter()
 
   // UI State
-  const [showTokenModal, setShowTokenModal] = useState(false)
-  const [tokenQuery, setTokenQuery] = useState("")
-  const [selectedToken, setSelectedToken] = useState<PublicToken>(PUBLIC_TOKENS[0])
-
   const [amount, setAmount] = useState<string>("")
   const [denom, setDenom] = useState<number | "">("")
-  const [showVariableFuture, setShowVariableFuture] = useState(false)
-
   const [generatingNote, setGeneratingNote] = useState(false)
   const [noteReady, setNoteReady] = useState(false)
-
   const [confirming, setConfirming] = useState<false | "approve" | "lock">(false)
   const [successOpen, setSuccessOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => setMounted(true), [])
   const { address } = useAccount()
   const {
     balance: publicBalance,
-    faucetAmount,
-    allowance,
+    balanceRaw,
+    isLoading: balanceLoading,
+    error: balanceError,
+    symbol,
     decimals,
-    checkAllowanceSufficient,
-    handleApproveTokens,
-    isApproving,
-    approveError,
-    isApproveConfirmed,
-    approveHash,
-  } = useERC20()
+  } = useNativeAVAX()
 
   const { 
-    encryptedBalance,
-    formattedBalance: encryptedFormattedBalance,
-    isLoadingBalance: isLoadingEncryptedBalance,
-    balanceError: encryptedBalanceError,
-    refreshBalance: refreshEncryptedBalance,
-    hasBalance: hasEncryptedBalance
+    decryptedBalance,
+    isLoading: isLoadingEncryptedBalance,
+    error: encryptedBalanceError
   } = useEncryptedBalance()
 
   const { data: userPublicKey } = useReadContract({
@@ -95,13 +76,7 @@ export default function DepositPage() {
   const { writeContract: depositTokens, data: depositHash, isPending: isDepositPending } = useWriteContract()
   const { isLoading: isDepositConfirming, isSuccess: isDepositConfirmed } = useWaitForTransactionReceipt({ hash: depositHash })
 
-  const hasAllowance = amount ? checkAllowanceSufficient(amount) : false
-
   async function onConfirmDeposit() {
-    if (!hasAllowance) {
-      await handleApproveTokens(String(numericAmount))
-      return
-    }
     if (!userPublicKey || (userPublicKey as any[]).length !== 2) return
     const pub = [BigInt((userPublicKey as any[])[0].toString()), BigInt((userPublicKey as any[])[1].toString())]
     const depAmt = BigInt(numericAmount)
@@ -112,36 +87,31 @@ export default function DepositPage() {
       nonce,
     ] as any
     const amountWei = parseUnits(String(numericAmount), decimals || 18)
+    
+    // For native AVAX, we need to send the value directly
     await depositTokens({
       address: EERC_CONTRACT.address,
       abi: EERC_CONTRACT.abi,
       functionName: 'deposit',
-      args: [amountWei, ERC20_TEST.address, amountPCT],
+      args: [amountWei, "0x0000000000000000000000000000000000000000", amountPCT], // Zero address for native token
       chainId: avalancheFuji.id,
+      value: amountWei, // Send native AVAX
     })
   }
 
-  const [recent, setRecent] = useState<{ label: string; status: "confirmed" | "pending" }[]>([
-    { label: "500 USDC → 500 eUSDC", status: "confirmed" },
-    { label: "1000 USDC → 1000 eUSDC", status: "pending" },
-  ])
+  // Create dynamic token from native AVAX balance
+  const selectedToken: PublicToken = useMemo(() => ({
+    symbol: symbol || "AVAX",
+    name: "Avalanche", 
+    priceUsd: 25, // Approximate AVAX price
+    balance: parseFloat(publicBalance || "0")
+  }), [publicBalance, symbol])
 
   // Derived values (UI only)
   const numericAmount = useMemo(() => Number.parseFloat(amount.replace(/,/g, "")) || 0, [amount])
   const amountUsd = useMemo(() => numericAmount * selectedToken.priceUsd, [numericAmount, selectedToken])
   const insufficient = numericAmount > selectedToken.balance
-  const canConfirm = numericAmount > 0 && !insufficient && !!denom && noteReady
-
-  const filteredTokens = useMemo(() => {
-    const q = tokenQuery.trim().toLowerCase()
-    if (!q) return PUBLIC_TOKENS
-    return PUBLIC_TOKENS.filter((t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-  }, [tokenQuery])
-
-  function onSelectToken(t: PublicToken) {
-    setSelectedToken(t)
-    setShowTokenModal(false)
-  }
+  const canConfirm = numericAmount > 0 && !insufficient && noteReady && !balanceLoading
 
   function setPct(p: number) {
     const next = Math.max(0, Math.min(selectedToken.balance, +(selectedToken.balance * p).toFixed(6)))
@@ -162,19 +132,13 @@ export default function DepositPage() {
   }
 
   useEffect(() => {
-    if (isApproveConfirmed) {
-      setConfirming(false)
-    }
-  }, [isApproveConfirmed])
-  useEffect(() => {
     if (isDepositConfirmed) {
       setSuccessOpen(true)
-      refreshEncryptedBalance()
-      setRecent((prev) => [{ label: `${numericAmount} ${selectedToken.symbol} → ${numericAmount} e${selectedToken.symbol}`, status: 'confirmed' }, ...prev.slice(0,4)])
     }
-  }, [isDepositConfirmed, numericAmount, selectedToken.symbol, refreshEncryptedBalance])
+  }, [isDepositConfirmed, numericAmount, selectedToken.symbol])
 
-  const stealthAddress = "0xStealth...abcd"
+  const obfuscate = (addr?: string) => (addr && addr.startsWith("0x") && addr.length > 6 ? `${addr.slice(0,6)}…${addr.slice(-4)}` : "0x…")
+  const stealthAddress = mounted ? obfuscate(address) : "0x…"
   const receiveLabel = denom
     ? `Deposit ${denom} ${selectedToken.symbol} → Receive ${denom} e${selectedToken.symbol}`
     : `Deposit ${selectedToken.symbol} → Receive e${selectedToken.symbol}`
@@ -229,7 +193,7 @@ export default function DepositPage() {
                     </span>
                   </div>
                   <div className="text-white text-base font-medium mt-2">
-                    Convert your ERC-20s into private eERC tokens.
+                    Convert your AVAX into private eAVAX tokens.
                   </div>
                 </div>
 
@@ -248,7 +212,7 @@ export default function DepositPage() {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent className="w-80 text-white border-white/15" side="bottom" align="end">
-                      Your tokens are locked in the ShieldedVault, and you receive private eERC equivalents that only
+                      Your AVAX is locked in the ShieldedVault, and you receive private eAVAX equivalents that only
                       you can spend.
                     </TooltipContent>
                   </Tooltip>
@@ -272,10 +236,8 @@ export default function DepositPage() {
                     </div>
 
                     <div className="mt-4 grid sm:grid-cols-[1fr_auto] gap-4 items-stretch">
-                      {/* Token selector */}
-                      <button
-                        onClick={() => setShowTokenModal(true)}
-                        className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between hover:bg-white/10 transition-colors shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
+                      {/* Token display (fixed to USDC) */}
+                      <div className="w-full text-left backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 flex items-center justify-between shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]"
                         style={{ background: "transparent" }}
                       >
                         <div className="flex items-center gap-4">
@@ -287,8 +249,8 @@ export default function DepositPage() {
                             <div className="text-white text-xs">{selectedToken.name}</div>
                           </div>
                         </div>
-                        <ChevronDown className="w-5 h-5 text-white" />
-                      </button>
+                        <div className="text-white text-xs">Fixed</div>
+                      </div>
 
                       {/* Amount input */}
                       <div
@@ -333,7 +295,7 @@ export default function DepositPage() {
 
                     <div className="mt-3 flex items-center justify-between">
                       <div className="text-sm text-white">
-                        Wallet balance: {selectedToken.balance.toLocaleString()} {selectedToken.symbol}
+                        Wallet balance: {balanceLoading ? "Loading..." : `${selectedToken.balance.toLocaleString()} ${selectedToken.symbol}`}
                       </div>
                       <div className="text-sm text-white">
                         ≈ ${amountUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
@@ -395,21 +357,24 @@ export default function DepositPage() {
                     </div>
                   </section>
 
-                  {/* Privacy Settings */}
+                  {/* Quick Amount Selection */}
                   <section
                     className="rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
                     style={{ background: "rgba(255,255,255,0.08)" }}
                   >
-                    <div className="text-white text-base font-semibold mb-2">Privacy Settings</div>
-                    <div className="text-sm text-white">
-                      Currently only fixed deposit sizes (100, 500, 1,000 {selectedToken.symbol}).
+                    <div className="text-white text-base font-semibold mb-2">Quick Amounts</div>
+                    <div className="text-sm text-white mb-4">
+                      Select a preset amount or enter custom amount above.
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {FIXED_DENOMS.map((d) => (
                         <button
                           key={d}
-                          onClick={() => setDenom(d)}
+                          onClick={() => {
+                            setDenom(d)
+                            setAmount(d.toString())
+                          }}
                           className={`px-4 py-3 rounded-xl border transition ${
                             denom === d
                               ? "bg-white/15 border-white/25 text-white"
@@ -419,20 +384,6 @@ export default function DepositPage() {
                           {d.toLocaleString()} {selectedToken.symbol}
                         </button>
                       ))}
-                    </div>
-
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setShowVariableFuture((s) => !s)}
-                        className="text-xs px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/15 text-white border border-white/15"
-                      >
-                        Future: variable deposits (preview)
-                      </button>
-                      {showVariableFuture && (
-                        <div className="mt-2 text-xs text-white">
-                          Variable deposits will be enabled in a future update.
-                        </div>
-                      )}
                     </div>
                   </section>
                 </div>
@@ -461,12 +412,12 @@ export default function DepositPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span>Network fees</span>
-                        <span className="text-white">~ $1.23</span>
+                        <span className="text-white">~ $0.50</span>
                       </div>
                     </div>
 
                     <div className="mt-4 text-xs text-white">
-                      Step 1: Approve ERC-20 • Step 2: Lock in ShieldedVault • Step 3: Mint eERC note
+                      Step 1: Send AVAX • Step 2: Lock in ShieldedVault • Step 3: Mint eAVAX note
                     </div>
                   </section>
 
@@ -477,13 +428,13 @@ export default function DepositPage() {
                   >
                     <Button
                       onClick={onConfirmDeposit}
-                      disabled={!canConfirm || !!confirming}
+                      disabled={!canConfirm || isDepositPending || isDepositConfirming}
                       className="w-full flex items-center justify-center gap-2 h-12 px-8 rounded-full bg-[#e6ff55] text-[#0a0b0e] font-bold text-sm hover:brightness-110 transition disabled:opacity-60"
                     >
-                      {confirming ? (
+                      {isDepositPending || isDepositConfirming ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          {confirming === "approve" ? "Approving…" : "Locking…"}
+                          {isDepositPending ? "Sending…" : "Confirming…"}
                         </>
                       ) : (
                         <>
@@ -539,76 +490,35 @@ export default function DepositPage() {
                 </div>
               </div>
 
-              {/* Recent Deposits */}
+              {/* Balance Info */}
               <section
                 className="mt-6 rounded-2xl backdrop-blur-xl border border-white/15 p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06),0_10px_28px_rgba(0,0,0,0.45)]"
                 style={{ background: "rgba(255,255,255,0.08)" }}
               >
                 <div className="flex items-center justify-between">
-                  <div className="text-white text-base font-semibold">Recent Deposits</div>
-                  <div className="text-xs text-white">Local log (private)</div>
+                  <div className="text-white text-base font-semibold">Current Balance</div>
+                  <div className="text-xs text-white">Live data</div>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {recent.map((r, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-sm py-2 border-b border-white/10 last:border-b-0"
-                    >
-                      <div className="text-white">{r.label}</div>
-                      <div className={r.status === "confirmed" ? "text-emerald-300" : "text-yellow-200"}>
-                        {r.status === "confirmed" ? "Confirmed" : "Pending finality"}
-                      </div>
+                  <div className="flex items-center justify-between text-sm py-2">
+                    <div className="text-white">Public AVAX</div>
+                    <div className="text-white font-mono">{selectedToken.balance.toLocaleString()} AVAX</div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm py-2">
+                    <div className="text-white">Private eAVAX</div>
+                    <div className="text-white font-mono">
+                      {isLoadingEncryptedBalance ? "Loading..." : `${decryptedBalance || "0"} eAVAX`}
                     </div>
-                  ))}
+                  </div>
                 </div>
                 <div className="mt-3 p-3 rounded-lg bg-white/10 border border-white/15 text-xs text-white flex items-center gap-2">
-                  <Wallet className="w-3.5 h-3.5" /> Stored locally only.
+                  <Wallet className="w-3.5 h-3.5" /> Real-time balance from contracts.
                 </div>
               </section>
             </div>
           </div>
         </div>
 
-        {/* Token selection modal using Dialog */}
-        <Dialog open={showTokenModal} onOpenChange={setShowTokenModal}>
-          <DialogContent className="backdrop-blur-3xl border border-white/15 bg-black/60 text-white rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-white">Select Token</DialogTitle>
-              <DialogDescription className="text-white">
-                Choose an ERC-20 to convert into a private eERC.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Input
-                value={tokenQuery}
-                onChange={(e) => setTokenQuery(e.target.value)}
-                placeholder="Search token…"
-                className="bg-white/10 border-white/15 text-white placeholder:text-white/60"
-              />
-              <div className="max-h-64 overflow-y-auto space-y-1">
-                {filteredTokens.map((t) => (
-                  <Button
-                    key={t.symbol}
-                    variant="ghost"
-                    onClick={() => onSelectToken(t)}
-                    className="w-full justify-between px-3 py-2 hover:bg-white/10 border border-transparent hover:border-white/10"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 bg-[#e6ff55] rounded-full flex items-center justify-center">
-                        <span className="text-black text-sm font-bold">{t.symbol[0]}</span>
-                      </div>
-                      <div className="text-left">
-                        <div className="text-white font-medium">{t.symbol}</div>
-                        <div className="text-xs text-white">{t.name}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-white">Bal: {t.balance.toLocaleString()}</div>
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </TooltipProvider>
   )
