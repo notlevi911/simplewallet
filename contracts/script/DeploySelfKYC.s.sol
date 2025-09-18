@@ -12,12 +12,16 @@ import "../contracts/SelfKYCVerifier.sol";
  */
 contract DeploySelfKYC is Script {
     // Self.xyz Hub V2 addresses
-    address constant SELF_HUB_V2_ALFAJORES = 0x68c931C9a534D37aa78094877F46fE46a49F1A51;
-    address constant SELF_HUB_V2_CELO = 0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF;
+    address constant SELF_HUB_V2_ALFAJORES =
+        0x68c931C9a534D37aa78094877F46fE46a49F1A51;
+    address constant SELF_HUB_V2_CELO =
+        0xe57F4773bd9c9d8b6Cd70431117d353298B9f5BF;
 
     // Default deployment parameters
-    uint256 constant DEFAULT_SCOPE = 0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
-    bytes32 constant DEFAULT_CONFIG_ID = 0x0000000000000000000000000000000000000000000000000000000000000001;
+    uint256 constant DEFAULT_SCOPE =
+        0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef;
+    bytes32 constant DEFAULT_CONFIG_ID =
+        0x0000000000000000000000000000000000000000000000000000000000000001;
     bool constant DEFAULT_REQUIRE_OFAC_CHECK = true;
     uint256 constant DEFAULT_MINIMUM_AGE = 18;
 
@@ -72,27 +76,37 @@ contract DeploySelfKYC is Script {
         console.log("Explorer URL:", getExplorerUrl(address(selfKYCVerifier)));
         console.log("");
         console.log("Next Steps:");
-        console.log("1. Update SELFKYC_CONTRACT_ADDRESS_ALFAJORES in backend .env");
+        console.log(
+            "1. Update SELFKYC_CONTRACT_ADDRESS_ALFAJORES in backend .env"
+        );
         console.log("2. Configure Self.xyz with proper config ID and scope");
         console.log("3. Test verification flow with Self mobile app");
         console.log("");
         console.log("Environment Variables to Update:");
-        console.log("SELFKYC_CONTRACT_ADDRESS_ALFAJORES=", address(selfKYCVerifier));
+        console.log(
+            "SELFKYC_CONTRACT_ADDRESS_ALFAJORES=",
+            address(selfKYCVerifier)
+        );
         console.log("");
 
         // Verify the deployment
         console.log("Verifying deployment...");
         require(address(selfKYCVerifier) != address(0), "Deployment failed");
-        require(selfKYCVerifier.getConfigId() == DEFAULT_CONFIG_ID, "Config ID mismatch");
+        require(
+            selfKYCVerifier.getConfigId() == DEFAULT_CONFIG_ID,
+            "Config ID mismatch"
+        );
         require(selfKYCVerifier.scope() == DEFAULT_SCOPE, "Scope mismatch");
         console.log("Deployment verification passed!");
     }
 
     function getHubV2Address() internal view returns (address) {
         uint256 chainId = block.chainid;
-        if (chainId == 44787) { // Alfajores
+        if (chainId == 44787) {
+            // Alfajores
             return SELF_HUB_V2_ALFAJORES;
-        } else if (chainId == 42220) { // Celo Mainnet
+        } else if (chainId == 42220) {
+            // Celo Mainnet
             return SELF_HUB_V2_CELO;
         } else {
             revert("Unsupported network");
@@ -110,14 +124,18 @@ contract DeploySelfKYC is Script {
         }
     }
 
-    function getExplorerUrl(address contractAddress) internal view returns (string memory) {
+    function getExplorerUrl(
+        address contractAddress
+    ) internal view returns (string memory) {
         uint256 chainId = block.chainid;
         string memory baseUrl;
 
-        if (chainId == 44787) { // Alfajores
-            baseUrl = "https://alfajores-blockscout.celo-testnet.org/address/";
-        } else if (chainId == 42220) { // Celo Mainnet
-            baseUrl = "https://explorer.celo.org/address/";
+        if (chainId == 44787) {
+            // Alfajores
+            baseUrl = "https://alfajores.celoscan.io/address/";
+        } else if (chainId == 42220) {
+            // Celo Mainnet
+            baseUrl = "https://celoscan.io/address/";
         } else {
             baseUrl = "https://unknown-explorer.com/address/";
         }
