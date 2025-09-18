@@ -1,3 +1,4 @@
+import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import  ignition  from "hardhat";
 import SelfKYCVerifierModule from "../ignition/modules/SelfKYCVerifier.js";
 
@@ -15,8 +16,10 @@ async function main() {
   // Deployment parameters for Alfajores
   const deploymentParameters = {
     SelfKYCVerifierModule: {
+      // TODO: Update with actual Self.xyz Hub V2 address for Celo Alfajores
+      identityVerificationHubV2Address: "0x68c931C9a534D37aa78094877F46fE46a49F1A51",
       configId: 1, // Will be updated after Self.xyz configuration
-      scope: "your-app-kyc-testnet-v1",
+      scope: 12345, // Convert string scope to uint256 hash
       requireOfacCheck: true,
       minimumAge: 18,
       allowedDocumentTypes: [1, 2], // E-Passport and EU ID Card

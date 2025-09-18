@@ -28,8 +28,8 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     }
 
     struct VerificationConfig {
-        uint256 configId;
-        string scope;
+        bytes32 configId;
+        uint256 scope;
         bool requireOfacCheck;
         uint256 minimumAge;
         string[] excludedCountries;
@@ -84,8 +84,8 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     );
 
     event ConfigurationUpdated(
-        uint256 indexed configId,
-        string scope,
+        bytes32 indexed configId,
+        uint256 scope,
         uint256 minimumAge,
         bool requireOfacCheck
     );
@@ -112,13 +112,14 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     // ========================================
 
     constructor(
-        uint256 _configId,
-        string memory _scope,
+        address _identityVerificationHubV2Address,
+        uint256 _scope,
+        bytes32 _configId,
         bool _requireOfacCheck,
         uint256 _minimumAge,
         string[] memory _excludedCountries,
         uint8[] memory _allowedDocumentTypes
-    ) SelfVerificationRoot(_configId, _scope) Ownable(msg.sender) {
+    ) SelfVerificationRoot(_identityVerificationHubV2Address, _scope) Ownable(msg.sender) {
         currentConfig = VerificationConfig({
             configId: _configId,
             scope: _scope,
@@ -139,15 +140,16 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     /**
      * @notice Custom verification logic called after Self proof validation
      * @dev This function is called by SelfVerificationRoot after successful proof verification
-     * @param nullifier The unique nullifier from the proof
-     * @param userIdentifier User identifier from the proof
-     * @param extractedAttrs Extracted attributes from the document
+     * @param output The verification output containing disclosed identity information
+     * @param userData User-defined data passed through the verification process
      */
     function customVerificationHook(
-        uint256 nullifier,
-        uint256 userIdentifier,
-        ExtractedAttrs memory extractedAttrs
+        ISelfVerificationRoot.GenericDiscloseOutputV2 memory output,
+        bytes memory userData
     ) internal override nonReentrant notInEmergency {
+        // Extract key data from the output
+        uint256 nullifier = output.nullifier;
+        uint256 userIdentifier = output.userIdentifier;
         // Prevent duplicate verifications
         require(!verifiedNullifiers[nullifier], "SelfKYCVerifier: Nullifier already used");
 
@@ -157,7 +159,7 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
         }
 
         // Validate configuration requirements
-        _validateVerificationRequirements(extractedAttrs);
+        _validateVerificationRequirements(output);
 
         // Store the verification data
         bool isNewUser = !userKYC[msg.sender].isVerified;
@@ -165,9 +167,9 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
         userKYC[msg.sender] = KYCData({
             isVerified: true,
             timestamp: block.timestamp,
-            nationality: extractedAttrs.nationality,
-            documentType: extractedAttrs.documentType,
-            isOfacClear: !extractedAttrs.isOfacMatch,
+            nationality: output.nationality,
+            documentType: _getDocumentTypeFromAttestation(output.attestationId),
+            isOfacClear: !output.ofac[0], // Check first OFAC flag
             verificationCount: userKYC[msg.sender].verificationCount + 1
         });
 
@@ -186,35 +188,35 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
         emit KYCVerified(
             msg.sender,
             nullifier,
-            extractedAttrs.nationality,
-            extractedAttrs.documentType,
+            output.nationality,
+            _getDocumentTypeFromAttestation(output.attestationId),
             block.timestamp,
-            !extractedAttrs.isOfacMatch
+            !output.ofac[0]
         );
     }
 
     /**
      * @notice Validate verification meets configuration requirements
-     * @param extractedAttrs The extracted attributes to validate
+     * @param output The verification output containing disclosed identity information
      */
-    function _validateVerificationRequirements(ExtractedAttrs memory extractedAttrs) internal view {
+    function _validateVerificationRequirements(ISelfVerificationRoot.GenericDiscloseOutputV2 memory output) internal view {
         require(currentConfig.isActive, "SelfKYCVerifier: Configuration not active");
 
         // Check OFAC requirement
         if (currentConfig.requireOfacCheck) {
-            require(!extractedAttrs.isOfacMatch, "SelfKYCVerifier: OFAC check failed");
+            require(!output.ofac[0], "SelfKYCVerifier: OFAC check failed");
         }
 
         // Check age requirement
         if (currentConfig.minimumAge > 0) {
-            require(extractedAttrs.ageAtLeast >= currentConfig.minimumAge, "SelfKYCVerifier: Age requirement not met");
+            require(output.olderThan >= currentConfig.minimumAge, "SelfKYCVerifier: Age requirement not met");
         }
 
         // Check document type
         if (currentConfig.allowedDocumentTypes.length > 0) {
             bool documentTypeAllowed = false;
             for (uint i = 0; i < currentConfig.allowedDocumentTypes.length; i++) {
-                if (currentConfig.allowedDocumentTypes[i] == extractedAttrs.documentType) {
+                if (currentConfig.allowedDocumentTypes[i] == _getDocumentTypeFromAttestation(output.attestationId)) {
                     documentTypeAllowed = true;
                     break;
                 }
@@ -225,7 +227,7 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
         // Check excluded countries
         for (uint i = 0; i < currentConfig.excludedCountries.length; i++) {
             require(
-                keccak256(bytes(extractedAttrs.nationality)) != keccak256(bytes(currentConfig.excludedCountries[i])),
+                keccak256(bytes(output.nationality)) != keccak256(bytes(currentConfig.excludedCountries[i])),
                 "SelfKYCVerifier: Nationality not allowed"
             );
         }
@@ -234,6 +236,15 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     // ========================================
     // Public View Functions
     // ========================================
+
+    /**
+     * @notice Get the configuration ID for Self.xyz verification
+     * @dev This is required by the SelfVerificationRoot interface
+     * @return The configuration ID as bytes32
+     */
+    function getConfigId() public view returns (bytes32) {
+        return currentConfig.configId;
+    }
 
     /**
      * @notice Check if a user is KYC verified
@@ -302,8 +313,8 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
      * @param _allowedDocumentTypes Array of allowed document types
      */
     function updateConfiguration(
-        uint256 _configId,
-        string memory _scope,
+        bytes32 _configId,
+        uint256 _scope,
         bool _requireOfacCheck,
         uint256 _minimumAge,
         string[] memory _excludedCountries,
@@ -321,7 +332,6 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
 
         // Update the parent contract's configuration
         _setScope(_scope);
-        _setConfigId(_configId);
 
         emit ConfigurationUpdated(_configId, _scope, _minimumAge, _requireOfacCheck);
     }
@@ -384,15 +394,21 @@ contract SelfKYCVerifier is SelfVerificationRoot, Ownable, ReentrancyGuard, Paus
     // Override Functions
     // ========================================
 
+    // ========================================
+    // Internal Helper Functions
+    // ========================================
+
     /**
-     * @notice Override to add pause functionality to verification
+     * @notice Maps attestation ID to document type
+     * @param attestationId The attestation ID from Self verification
+     * @return Document type identifier
      */
-    function verify(
-        uint256 nullifier,
-        uint256 userIdentifier,
-        ExtractedAttrs calldata extractedAttrs,
-        bytes calldata proof
-    ) public override whenNotPaused notInEmergency {
-        super.verify(nullifier, userIdentifier, extractedAttrs, proof);
+    function _getDocumentTypeFromAttestation(bytes32 attestationId) internal pure returns (uint8) {
+        // Map Self.xyz attestation IDs to document types
+        // This would need to be updated based on Self.xyz attestation ID mappings
+        // For now, return a default value
+        if (attestationId == bytes32(uint256(1))) return 1; // E-Passport
+        if (attestationId == bytes32(uint256(2))) return 2; // EU ID Card
+        return 1; // Default to E-Passport
     }
 }

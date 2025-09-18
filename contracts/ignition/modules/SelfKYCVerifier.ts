@@ -20,10 +20,18 @@ const SelfKYCVerifierModule = buildModule("SelfKYCVerifierModule", (m) => {
   // Excluded countries (empty by default, can be configured)
   const excludedCountries = m.getParameter("excludedCountries", []);
 
+  // Self.xyz Identity Verification Hub V2 address
+  // TODO: Update with actual Self.xyz Hub V2 address for the target network
+  const identityVerificationHubV2Address = m.getParameter(
+    "identityVerificationHubV2Address",
+    "0x0000000000000000000000000000000000000001" // Placeholder - needs real address
+  );
+
   // Deploy the SelfKYCVerifier contract
   const selfKYCVerifier = m.contract("SelfKYCVerifier", [
-    configId,
+    identityVerificationHubV2Address,
     scope,
+    configId,
     requireOfacCheck,
     minimumAge,
     excludedCountries,
