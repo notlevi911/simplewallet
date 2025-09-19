@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 import type React from "react"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import LiquidEther from "./liquid-ether"
 import { useEncryptedBalance } from "@/hooks/use-encrypted-balance"
@@ -29,6 +29,9 @@ export default function TsunamiDashboard() {
   const [showBalances, setShowBalances] = useState(true)
   const [hasZkAttestation, setHasZkAttestation] = useState<boolean>(true)
   const { address } = useAccount()
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => setMounted(true), [])
 
   // Live encrypted balance (currently eUSDC)
   const { decryptedBalance, isLoading } = useEncryptedBalance()
@@ -90,7 +93,7 @@ export default function TsunamiDashboard() {
               </div>
               <div className="flex items-center gap-2 text-white/90 text-sm">
                 <span className="hidden xs:inline">Wallet:</span>
-                <span className="font-mono text-white">{obfuscate(address)}</span>
+                <span className="font-mono text-white">{mounted ? obfuscate(address) : "0x…"}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
