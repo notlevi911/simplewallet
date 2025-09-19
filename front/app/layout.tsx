@@ -6,6 +6,7 @@ import "../components/liquid-ether.css"
 import Navbar from "../components/navbar"
 // import LiquidEther from "../components/liquid-ether"
 import Providers from "./providers"
+import { ToastContainer } from "../components/simple-toast"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -58,6 +59,9 @@ export default function RootLayout({
 
         {/* Page content */}
         <div className="relative z-10">{children}</div>
+        
+        {/* Global Toast Container */}
+        <ToastContainer />
         </Providers>
       </body>
     </html>
