@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { useAccount, useChainId, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { toast } from 'sonner'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function Navbar() {
   const router = useRouter()
@@ -66,6 +66,13 @@ export default function Navbar() {
                 <BarChart3 className="w-4 h-4" />
                 Dashboard
               </button>
+              <button
+                onClick={() => router.push("/kyc-test")}
+                className="flex items-center gap-2 text-sm transition-colors px-3 py-2 rounded-lg text-white hover:text-[#E8CFEA] hover:bg-white/10"
+              >
+                <User className="w-4 h-4" />
+                KYC Test
+              </button>
               <div className="flex items-center gap-2">
                 <button
                   onClick={async () => {
@@ -83,9 +90,9 @@ export default function Navbar() {
                   }}
                   className="flex items-center gap-2 text-sm transition-colors px-4 py-2 rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/15 font-medium"
                 >
-                  {mounted ? (address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'Connect') : 'Connect'}
+                  {mounted && address ? `${address.slice(0,6)}...${address.slice(-4)}` : 'Connect'}
                 </button>
-                <span className="text-xs text-white/60">{mounted ? (chainId ? `Chain: ${chainId}` : '') : ''}</span>
+                <span className="text-xs text-white/60">{mounted && chainId ? `Chain: ${chainId}` : ''}</span>
               </div>
             </div>
           </div>

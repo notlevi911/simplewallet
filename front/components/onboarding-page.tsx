@@ -24,6 +24,7 @@ import { Progress } from "@/components/ui/progress"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useAccount } from 'wagmi'
 import { useRegistration } from '@/hooks/use-registration'
+import { KYCStep } from './kyc-step'
 
 type Mode = "create" | "import"
 
@@ -558,8 +559,40 @@ export default function OnboardingPage() {
                   </Card>
                 )}
 
-                {/* 6. Feature Highlights */}
-                {step === 5 && (
+                {/* 6. KYC Verification (only for institutional mode) */}
+                {step === 5 && compliance === "institutional" && (
+                  <Card>
+                    <div className="text-center">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/10 flex items-center justify-center">
+                        <Shield className="w-8 h-8 text-white" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-white mb-2">KYC Verification</h2>
+                      <p className="text-white/70 mb-6">
+                        Complete KYC verification to enable institutional features
+                      </p>
+                    </div>
+                    
+                    <KYCStep
+                      onKYCComplete={(kycData) => {
+                        console.log('KYC completed:', kycData);
+                        // Store KYC data in state or localStorage
+                        localStorage.setItem('kycData', JSON.stringify(kycData));
+                        next();
+                      }}
+                      onKYCError={(error) => {
+                        console.error('KYC error:', error);
+                        // Handle KYC error
+                      }}
+                      onSkip={() => {
+                        console.log('KYC skipped');
+                        next();
+                      }}
+                    />
+                  </Card>
+                )}
+
+                {/* 6. Feature Highlights (retail mode) */}
+                {step === 5 && compliance === "retail" && (
                   <Card>
                     <div className="text-white/90 text-base font-semibold mb-3">Feature Highlights</div>
                     <div className="grid sm:grid-cols-3 gap-3">
